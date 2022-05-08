@@ -6,7 +6,14 @@ import {
 import * as dat from 'lil-gui'
 import testVertexShader from './shaders/test/vertex.glsl'
 import testFragmentShader from './shaders/test/fragment.glsl'
-
+import {
+    Perlin,
+    FBM
+}
+from '../node_modules/three-noise/build/three-noise.module.js';
+import {
+    Vector2
+} from 'three'
 
 
 /**
@@ -31,9 +38,15 @@ const textureLoader = new THREE.TextureLoader()
  * Test mesh
  */
 // Geometry
-const geometry = new THREE.PlaneGeometry(1, 1, 32, 32)
+const xgrid = 100;
+const ygrid = 100;
+const x_count = xgrid + 1;
+const y_count = ygrid + 1;
+
+const geometry = new THREE.PlaneGeometry(3, 2, xgrid, ygrid)
 
 const count = geometry.attributes.position.count;
+
 const randoms = new Float32Array(count);
 
 const params = {
@@ -41,21 +54,33 @@ const params = {
 }
 let rndSeed = 1;
 
+const vect2 = new Vector2(0, 0);
+
+
+const perlin = new Perlin(Math.random())
 
 
 function resetRnd(rndSeed) {
-    for (let i = 0; i < count; i++) {
-        randoms[i] = Math.random(rndSeed);
+
+
+    let xoff = 0.00;
+    for (let i = 0; i < x_count; i++) {
+        let yoff = 0.00;
+        for (let j = 0; j < y_count; j++) {
+            randoms[i * y_count + j] = perlin.get2(new Vector2(xoff, yoff)) * 1.5;
+            yoff += 0.2;
+        }
+        xoff += 0.2;
     }
 
     geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1))
 }
 
-gui.add(params, 'RndSeed')
-    .onChange(() => resetRnd(params.RndSeed))
-    .min(1)
-    .max(10)
-    .step(1)
+// gui.add(params, 'RndSeed')
+//     .onChange(() => resetRnd(params.RndSeed))
+//     .min(1)
+//     .max(10)
+//     .step(1)
 
 // function assignColor(color) {
 //     geometry.material.color.set(color)
@@ -68,10 +93,24 @@ gui.add(params, 'RndSeed')
 
 rndSeed = params.RndSeed
 
-console.log(rndSeed)
 
-for (let i = 0; i < count; i++) {
-    randoms[i] = Math.random();
+
+// for (let i = 0; i < count; i++) {
+//     randoms[i] = Math.random();
+//     // console.log(noise(i, i, i))
+//     // randoms[i] = 0.04;
+// }
+
+
+
+let xoff = 0.00;
+for (let i = 0; i < x_count; i++) {
+    let yoff = 0.00;
+    for (let j = 0; j < y_count; j++) {
+        randoms[i * y_count + j] = perlin.get2(new Vector2(xoff, yoff)) * 1.5;
+        yoff += 0.2;
+    }
+    xoff += 0.2;
 }
 
 
@@ -85,7 +124,7 @@ const material = new THREE.RawShaderMaterial({
     vertexShader: testVertexShader,
     fragmentShader: testFragmentShader,
     //transparent: true,
-    //wireframe: true
+    wireframe: true
 
 })
 
@@ -116,11 +155,11 @@ window.addEventListener('resize', () => {
 })
 
 /**
- * Camera
+ * Camera   
  */
 // Base camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.set(0.25, -0.25, 1)
+camera.position.set(0, -0.35, 0.25)
 scene.add(camera)
 
 // Controls
@@ -142,7 +181,25 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 const clock = new THREE.Clock()
 
 const tick = () => {
-    const elapsedTime = clock.getElapsedTime()
+
+
+
+    let elapsedTime = clock.getElapsedTime()
+
+    // flying
+
+
+    let xoff = elapsedTime * 2.2;
+    for (let i = 0; i < x_count; i++) {
+        let yoff = 0.00;
+        for (let j = 0; j < y_count; j++) {
+            randoms[i * y_count + j] = perlin.get2(new Vector2(xoff, yoff)) * 1.5;
+            yoff -= 0.15;
+        }
+        xoff -= 0.15;
+    }
+
+    geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1))
 
     // Update controls
     controls.update()
